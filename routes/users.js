@@ -7,6 +7,6 @@ const usersRouter = express.Router();
 
 usersRouter.post("/", createUser);
 usersRouter.get("/me", isAuthenticated, me);
-usersRouter.get("/", isAuthenticated, getUsers);
+usersRouter.get("/", getUsers);
 
 export { usersRouter };
