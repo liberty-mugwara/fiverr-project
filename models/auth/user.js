@@ -18,7 +18,7 @@ const UserSchema = new Schema(
       trim: true,
       index: { unique: true },
     },
-    jwts: [String],
+    jwts: String,
   },
   {
     toObject: {
