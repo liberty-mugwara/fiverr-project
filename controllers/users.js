@@ -5,7 +5,7 @@ import { authorize } from "../auth/index.js";
 import { generateAccessToken } from "../auth/index.js";
 import { hash } from "bcrypt";
 
-export const createUser = async (req, res) => {
+export const createUser = async (req, res, next) => {
   let company;
   try {
     const { name, email, password, companyName } = req.body;
@@ -97,53 +97,32 @@ export const createUser = async (req, res) => {
 
     res.status(201);
     res.json({ user, token });
-  } catch (err) {
-    if (err instanceof HttpError) {
-      res.status(err.statusCode);
-      res.json(err.message);
-    } else {
-      console.error(err);
-      res.status(500);
-      res.json("Internal Serve Error.");
-    }
+  } catch (error) {
+    next(error);
   }
 };
 
-export const me = async (req, res) => {
+export const me = async (req, res, next) => {
   try {
     const user = await User.findById(res.locals.user._id).populate("company");
     res.status(200);
     res.json({ user });
-  } catch (err) {
-    if (err instanceof HttpError) {
-      res.status(err.statusCode);
-      res.json(err.message);
-    } else {
-      console.error(err);
-      res.status(500);
-      res.json("Internal Serve Error.");
-    }
+  } catch (error) {
+    next(error);
   }
 };
 
-export const getUsers = async (req, res) => {
+export const getUsers = async (_req, res, next) => {
   try {
     const requiredScopes = ["admin", "staff"];
-    // authorize(res.locals.user, requiredScopes, { allScopesRequired: false });
+    authorize(res.locals.user, requiredScopes, { allScopesRequired: false });
 
     const users = await User.find({
-      //   company: res.locals.user.companyId,
+      company: res.locals.user.companyId,
     }).populate("company");
     res.status(200);
     res.json({ users });
-  } catch (err) {
-    if (err instanceof HttpError) {
-      res.status(err.statusCode);
-      res.json(err.message);
-    } else {
-      console.error(err);
-      res.status(500);
-      res.json("Internal Serve Error.");
-    }
+  } catch (error) {
+    next(error);
   }
 };

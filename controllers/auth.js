@@ -8,21 +8,15 @@ import { User } from "../models/index.js";
  * @param {Express.Request} req
  * @param {Express.Response} res
  */
-export const login = async (req, res) => {
+export const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
     const user = await authenticateLogin({ email, password });
     const token = await generateAccessToken(user);
     res.status(200);
     res.json({ token });
-  } catch (err) {
-    if (err instanceof HttpError) {
-      res.status(err.statusCode);
-      res.json(err.message);
-    } else {
-      res.status(500);
-      res.json("Internal Serve Error.");
-    }
+  } catch (error) {
+    next(error);
   }
 };
 
@@ -31,7 +25,7 @@ export const login = async (req, res) => {
  * @param {Express.Request} req
  * @param {Express.Response} res
  */
-export const logout = async (req, res) => {
+export const logout = async (req, res, next) => {
   try {
     const token = (req.get("Authorization") || "").replace("Bearer", "").trim();
     const user = await User.findById(res.locals.user._id);
@@ -39,13 +33,7 @@ export const logout = async (req, res) => {
     await user.save();
     res.status(200);
     res.json("Successfully logged out");
-  } catch (err) {
-    if (err instanceof HttpError) {
-      res.status(err.statusCode);
-      res.json(err.message);
-    } else {
-      res.status(500);
-      res.json("Internal Serve Error.");
-    }
+  } catch (error) {
+    next(error);
   }
 };

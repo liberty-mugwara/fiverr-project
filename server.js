@@ -1,6 +1,10 @@
 import "./dotenv-config.js";
 
-import { handle404, setAuthContext } from "./middleware/index.js";
+import {
+  handle404,
+  handleHttpErrors,
+  setAuthContext,
+} from "./middleware/index.js";
 
 import { authRouter } from "./routes/auth.js";
 import express from "express";
@@ -26,6 +30,8 @@ app.use("/users", usersRouter);
 app.get("/", (req, res) => {
   res.send("Hello World!");
 });
+
+app.use(handleHttpErrors);
 
 app.use(handle404);
 
