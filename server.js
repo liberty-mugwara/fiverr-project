@@ -1,9 +1,11 @@
-import _dotenv from "./dotenv-config.js";
+import "./dotenv-config.js";
+
+import { handle404, setAuthContext } from "./middleware/index.js";
+
 import { authRouter } from "./routes/auth.js";
 import express from "express";
 import helmet from "helmet";
 import logger from "morgan";
-import { setAuthContext } from "./middleware/auth.js";
 import { usersRouter } from "./routes/index.js";
 
 const app = express();
@@ -24,6 +26,8 @@ app.use("/users", usersRouter);
 app.get("/", (req, res) => {
   res.send("Hello World!");
 });
+
+app.use(handle404);
 
 app.listen(port, () => {
   console.log(`App listening on port http://localhost:${port}`);
