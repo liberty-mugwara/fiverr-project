@@ -25,7 +25,7 @@ const UserSchema = new Schema(
       transform: function (_doc, ret, _options) {
         ret.id = ret._id;
         delete ret.password;
-        delete ret.jwts;
+        delete ret.jwt;
         return ret;
       },
     },
@@ -33,7 +33,7 @@ const UserSchema = new Schema(
       transform: function (_doc, ret, _options) {
         ret.id = ret._id;
         delete ret.password;
-        delete ret.jwts;
+        delete ret.jwt;
         return ret;
       },
     },

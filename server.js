@@ -1,16 +1,15 @@
 import "./dotenv-config.js";
 
+import { authRouter, jobsRouter, usersRouter } from "./routes/index.js";
 import {
   handle404,
   handleHttpErrors,
   setAuthContext,
 } from "./middleware/index.js";
 
-import { authRouter } from "./routes/auth.js";
 import express from "express";
 import helmet from "helmet";
 import logger from "morgan";
-import { usersRouter } from "./routes/index.js";
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -26,6 +25,7 @@ app.use(setAuthContext);
 // Routes
 app.use("/auth", authRouter);
 app.use("/users", usersRouter);
+app.use("/jobs", jobsRouter);
 
 app.get("/", (req, res) => {
   res.send("Hello World!");
