@@ -35,8 +35,8 @@ export async function verifyAccessToken(userId, token) {
   try {
     const user = await User.findById(userId);
 
-    const storedToken = user.jwts.find((jwt) => jwt === token);
-    console.log({ user, storedToken, jwts: user.jwts });
+    const storedToken = user.jwt;
+    console.log({ user, storedToken, jwt: user.jwt });
 
     return (
       (storedToken && jwt.verify(storedToken, process.env.JWT_SECRET)) || null
@@ -119,7 +119,7 @@ export async function generateAccessToken(user) {
       companyId: user.company?._id || user.company,
     });
 
-    user.jwts.push(token);
+    user.jwt = token;
     await user.save();
     // TODO: Handle expired tokens
     return token;

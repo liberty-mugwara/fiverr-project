@@ -35,8 +35,7 @@ export const logout = async (req, res) => {
   try {
     const token = (req.get("Authorization") || "").replace("Bearer", "").trim();
     const user = await User.findById(res.locals.user._id);
-    const otherJwts = user.jwts.filter((v) => v !== token);
-    user.jwts = otherJwts;
+    user.jwt = "";
     await user.save();
     res.status(200);
     res.json("Successfully logged out");
