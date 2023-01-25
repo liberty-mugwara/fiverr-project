@@ -1,7 +1,7 @@
 import { Company, User } from "../models/index.js";
+import { authorize, generateScope } from "../auth/index.js";
 
 import { HttpError } from "../errors/http.js";
-import { authorize } from "../auth/index.js";
 import { generateAccessToken } from "../auth/index.js";
 import { hash } from "bcrypt";
 
@@ -10,25 +10,12 @@ export const createUser = async (req, res, next) => {
   try {
     const { name, email, password, companyName } = req.body;
 
-    const requiredFields = ["name", "email", "password", "companyName"];
-    const missingFields = requiredFields.filter((f) => !req.body[f]);
-
-    if (missingFields.length) {
-      throw new HttpError({
-        message: `The following fields are required: ${missingFields.join(
-          ", "
-        )}`,
-        statusCode: 400,
-      });
-    }
-
     // TODO: validate and normalize email
 
     let isAdmin = false;
     let isStaff = false;
-    let isCandidate = false;
     let createCompany = false;
-    company = await Company.findOne({ name: companyName });
+    company = await Company.findById(res.locals.user.companyId);
     let requiredScopes = ["admin", "staff"];
 
     if (!company) {
@@ -47,27 +34,34 @@ export const createUser = async (req, res, next) => {
       });
 
       // check if user is creating user from same company
-      console.log(
-        res.locals.user.companyId,
-        company._id.toString(),
-        res.locals.user.companyId !== company._id.toString()
-      );
+
       if (res.locals.user.companyId !== company._id.toString()) {
         res.status(403);
         return res.json("Forbidden: You are not allowed to create this user");
       }
-
-      if (res.locals.user.roles.includes("admin")) {
-        // admins creates staff
+      console.log("=====>", res.locals);
+      if (
+        res.locals.user.roles.includes("admin") ||
+        res.locals.user.roles.includes("staff")
+      ) {
         isStaff = true;
-      } else if (res.locals.user.roles.includes("staff")) {
-        // staffs creates candidates
-        isCandidate = true;
       } else {
-        // candidates are not allowed to create users
         res.status(403);
         return res.json("Forbidden: You are not allowed to create this user");
       }
+    }
+
+    const requiredFields = ["name", "email", "password", "companyName"];
+    if (!createCompany) requiredFields.pop();
+    const missingFields = requiredFields.filter((f) => !req.body[f]);
+
+    if (missingFields.length) {
+      throw new HttpError({
+        message: `The following fields are required: ${missingFields.join(
+          ", "
+        )}`,
+        statusCode: 400,
+      });
     }
 
     const existingUser = await User.findOne({ email });
@@ -88,15 +82,13 @@ export const createUser = async (req, res, next) => {
       company: company._id,
       isAdmin,
       isStaff,
-      isCandidate,
     };
 
     // create user
     const user = await (await User.create(createData)).populate("company");
-    const token = await generateAccessToken(user);
-
+    await generateScope(user);
     res.status(201);
-    res.json({ user, token });
+    res.json({ user });
   } catch (error) {
     next(error);
   }
@@ -120,6 +112,7 @@ export const getUsers = async (_req, res, next) => {
     const users = await User.find({
       company: res.locals.user.companyId,
     }).populate("company");
+
     res.status(200);
     res.json({ users });
   } catch (error) {

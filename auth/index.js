@@ -90,13 +90,15 @@ export function authorize(
   });
 }
 
-export function generateScope(user) {
+export async function generateScope(user) {
   const userScope = [];
-  const scopes = ["Admin", "Staff", "Candidate"];
+  const scopes = ["Admin", "Staff"];
   scopes.forEach((scope) => {
     if (user["is" + scope]) userScope.push(scope.toLowerCase());
   });
 
+  user.scope = userScope.join(",");
+  await user.save();
   return userScope;
 }
 
@@ -112,7 +114,7 @@ export function generateToken(payload) {
 
 export async function generateAccessToken(user) {
   try {
-    const scope = generateScope(user);
+    const scope = await generateScope(user);
     const token = generateToken({
       roles: scope,
       _id: user._id,

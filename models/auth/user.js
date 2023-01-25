@@ -8,7 +8,6 @@ const UserSchema = new Schema(
     isAdmin: { type: Boolean, default: false },
     // employees
     isStaff: { type: Boolean, default: false },
-    isCandidate: { type: Boolean, default: false },
     scope: String,
     company: { type: Schema.Types.ObjectId, ref: Company },
     name: { type: String, required: true, trim: true },
