@@ -117,6 +117,7 @@ export async function generateAccessToken(user) {
       roles: scope,
       _id: user._id,
       companyId: user.company?._id || user.company,
+      name: user.name,
     });
 
     user.jwt = token;

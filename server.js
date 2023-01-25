@@ -7,13 +7,15 @@ import {
   setAuthContext,
 } from "./middleware/index.js";
 
+import cors from "cors";
 import express from "express";
 import helmet from "helmet";
 import logger from "morgan";
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 3001;
 
+app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(helmet());
