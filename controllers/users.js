@@ -1,91 +1,59 @@
 import { Company, User } from "../models/index.js";
 import { authorize, generateScope } from "../auth/index.js";
+import { throw400, throw401, throw403 } from "../errors/http.js";
 
-import { HttpError } from "../errors/http.js";
-import { generateAccessToken } from "../auth/index.js";
 import { hash } from "bcrypt";
+import { validatePostBody } from "../utils/req-body-validator.js";
 
 export const createUser = async (req, res, next) => {
   let company;
+  const authUser = res.locals.user;
   try {
     const { name, email, password, companyName } = req.body;
 
-    // TODO: validate and normalize email
+    company = companyName
+      ? await Company.findOne({ name: companyName })
+      : await Company.findById(authUser?.companyId);
 
-    let isAdmin = false;
-    let isStaff = false;
-    let createCompany = false;
-    company = await Company.findById(res.locals.user?.companyId);
-    let requiredScopes = ["admin", "staff"];
+    const isAdmin = !company;
+    const isStaff = !!company;
+    const requiredScopes = company ? ["admin", "staff"] : [];
+    const requiredFields = ["name", "email", "password"];
+    if (!company) requiredFields.push("companyName");
 
-    if (!company) {
-      createCompany = true;
-      isAdmin = true;
-      requiredScopes = []; // The first user for a company doesn't need auth
-    } else {
-      // if company, the user creating this user must be authenticated
-      if (!res.locals.authenticated) {
-        res.status(401);
-        return res.json("You are not authorized, please login");
-      }
-
-      authorize(res.locals.user, requiredScopes, {
-        allScopesRequired: false,
-      });
+    // if company, the user creating this user must be authenticated
+    if (company) {
+      if (!res.locals.authenticated) throw401();
+      authorize(authUser, requiredScopes);
 
       // check if user is creating user from same company
-
-      if (res.locals.user.companyId !== company._id.toString()) {
-        res.status(403);
-        return res.json("Forbidden: You are not allowed to create this user");
+      if (authUser.companyId !== company._id.toString()) {
+        throw403("Forbidden: You are not allowed to create this user");
       }
-      console.log("=====>", res.locals);
-      if (
-        res.locals.user.roles.includes("admin") ||
-        res.locals.user.roles.includes("staff")
-      ) {
-        isStaff = true;
-      } else {
-        res.status(403);
-        return res.json("Forbidden: You are not allowed to create this user");
+      if (!requiredScopes.some((scope) => authUser.roles.includes(scope))) {
+        throw403("Forbidden: You are not allowed to create this user");
       }
     }
 
-    const requiredFields = ["name", "email", "password", "companyName"];
-    if (!createCompany) requiredFields.pop();
-    const missingFields = requiredFields.filter((f) => !req.body[f]);
-
-    if (missingFields.length) {
-      throw new HttpError({
-        message: `The following fields are required: ${missingFields.join(
-          ", "
-        )}`,
-        statusCode: 400,
-      });
-    }
+    validatePostBody(req, requiredFields);
 
     const existingUser = await User.findOne({ email });
 
-    if (existingUser) {
-      throw new HttpError({
-        message: `User with email ${email} already exists`,
-        statusCode: 400,
-      });
-    }
+    if (existingUser) throw400(`User with email ${email} already exists`);
 
-    if (createCompany) company = await Company.create({ name: companyName });
-
-    const createData = {
-      name,
-      email,
-      password: await hash(password, 10),
-      company: company._id,
-      isAdmin,
-      isStaff,
-    };
+    if (!company) company = await Company.create({ name: companyName });
 
     // create user
-    const user = await (await User.create(createData)).populate("company");
+    const user = await (
+      await User.create({
+        name,
+        email,
+        password: await hash(password, 10),
+        company: company._id,
+        isAdmin,
+        isStaff,
+      })
+    ).populate("company");
     await generateScope(user);
     res.status(201);
     res.json({ user });
