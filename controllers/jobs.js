@@ -1,6 +1,6 @@
 import { Candidate, Job } from "../models/index.js";
+import { throw400, throw403 } from "../errors/http.js";
 
-import { HttpError } from "../errors/http.js";
 import { authorize } from "../auth/index.js";
 import { validatePostBody } from "../utils/index.js";
 
@@ -13,18 +13,15 @@ export const postJob = async (req, res, next) => {
 
     const existingJob = await Job.findOne({ name });
 
-    if (existingJob) {
-      throw new HttpError({ message: `Job already exists`, statusCode: 400 });
-    }
-
-    const createData = {
-      name,
-      description,
-      company: res.locals.user.companyId,
-    };
-
+    if (existingJob) throw400("Job already exists");
     // create job
-    const job = await (await Job.create(createData)).populate("company");
+    const job = await (
+      await Job.create({
+        name,
+        description,
+        company: res.locals.user.companyId,
+      })
+    ).populate("company");
 
     res.status(201);
     res.json({ job });
@@ -61,16 +58,12 @@ export const jobAddCandidate = async (req, res, next) => {
 
     const job = await Job.findById(jobId);
 
-    if (!job) {
-      throw new HttpError({ statusCode: 400, message: "Invalid Job id" });
-    }
+    if (!job) throw400("Invalid Job id");
 
     if (job.company.toString() !== res.locals.user.companyId) {
-      throw new HttpError({
-        statusCode: 403,
-        message:
-          "Forbidden: You are not allowed to create a candidate for this job. The job is not from your company.",
-      });
+      throw403(
+        "Forbidden: You are not allowed to create a candidate for this job. The job is not from your company."
+      );
     }
 
     const existingCandidateForJob = await Candidate.findOne({
@@ -79,10 +72,9 @@ export const jobAddCandidate = async (req, res, next) => {
     });
 
     if (existingCandidateForJob) {
-      throw new HttpError({
-        message: `Candidate with this email already exists for the job posting: ${job.name}`,
-        statusCode: 400,
-      });
+      throw400(
+        `Candidate with this email already exists for the job posting: ${job.name}`
+      );
     }
 
     const candidate = await (
@@ -107,16 +99,12 @@ export const jobListCandidates = async (req, res, next) => {
 
     const job = await Job.findById(jobId);
 
-    if (!job) {
-      throw new HttpError({ statusCode: 400, message: "Invalid Job id" });
-    }
+    if (!job) throw400("Invalid Job id");
 
     if (job.company.toString() !== res.locals.user.companyId) {
-      throw new HttpError({
-        statusCode: 403,
-        message:
-          "Forbidden: You are not allowed to access this job. The job is not from your company.",
-      });
+      throw403(
+        "Forbidden: You are not allowed to access this job. The job is not from your company."
+      );
     }
 
     const candidates = await Candidate.find({
