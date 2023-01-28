@@ -15,7 +15,7 @@ export const createUser = async (req, res, next) => {
     let isAdmin = false;
     let isStaff = false;
     let createCompany = false;
-    company = await Company.findById(res.locals.user.companyId);
+    company = await Company.findById(res.locals.user?.companyId);
     let requiredScopes = ["admin", "staff"];
 
     if (!company) {

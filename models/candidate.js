@@ -7,7 +7,6 @@ const CandidateSchema = new Schema({
     trim: true,
     lowercase: true,
     required: true,
-    index: { unique: true },
   },
   name: { type: String, required: true, trim: true },
   jobSeeked: { type: Schema.Types.ObjectId, ref: "Job" },
